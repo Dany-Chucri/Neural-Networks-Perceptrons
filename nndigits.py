@@ -37,7 +37,7 @@ def read_data_into_3d(file_path):
 
     if current_matrix:
         raise ValueError(f"Incomplete final matrix starting at line {line_number - len(current_matrix) + 1}")
-    return np.array(matrix_list, dtype='<U1')
+    return np.array(matrix_list)
 
 
 # Assigns respective labels for each image in a dictionary using one-hot-encoding,
@@ -53,11 +53,9 @@ def assign_labels(file_path):
                 # Create one-hot encoded vector of size 10
                 label_vector = [0] * 10
                 label_vector[label] = 1
-                labels_dict[index] = label_vector
+                labels_dict[index] = np.array(label_vector)
             else:
                 raise ValueError("Non-integer value found in labels file")
-    if len(labels_dict) != 5000:
-        raise ValueError("The number of labels does not match the expected count of 5000")
     return labels_dict
 
 
@@ -69,7 +67,7 @@ def map_features(image_matrix):
     for row in image_matrix:
         for char in row:
             if char == ' ':  # Empty character
-                flattened_vector.append(-10)
+                flattened_vector.append(0.1)
             else:  # Non-empty character
                 flattened_vector.append(10)
     return np.array(flattened_vector)
@@ -77,8 +75,12 @@ def map_features(image_matrix):
 
 # To initialize weight matrices
 def init_weights(dimx, dimy):
-    weights = np.random.uniform(0.0000000001, 0.9999999999, size=(dimx, dimy))
-    weights[0, 0] = 1
+    weights = np.empty((dimx, dimy))
+    for iy, ix in np.ndindex(weights.shape):
+        weight = 0
+        while weight == 0:
+            weight = np.random.uniform(-1, 1)
+        weights[iy, ix] = weight
     return weights
 
 
@@ -98,63 +100,109 @@ def forward_propagation(layer1, weights_1_2, weights_2_out):
     a2 = softmax(z2)
     z3 = np.dot(weights_2_out, a2)
     a3 = softmax(z3)
+    # testing prints
+    i = 0
+    if i == 1:
+        print(f'layer1 is {layer1}')
+        print(f'layer1 shape is {layer1.shape}')
+        print(f'weights_1_2  is {weights_1_2}')
+        print(f'weights_1_2 shape is {weights_1_2.shape}')
+        print(f'z2 is {z2}')
+        print(f'z2 shape is {z2.shape}')
+        print(f'a2 is {a2}')
+        print(f'a2 shape is {a2.shape}')
+        print(f'weights_2_out shape is {weights_2_out.shape}')
+        print(f'z3 is {z3}')
+        print(f'z3 shape is {z3.shape}')
+        print(f'a3 is {a2}')
+        print(f'a3 shape is {a3.shape}')
+        print(a3.sum())
     return a2, a3
 
 
-# Initialization
-training_matrix = read_data_into_3d("data/digitdata/trainingimages")
-training_labels = assign_labels("data/digitdata/traininglabels")
+def train():
+    # Initialization
+    training_matrix = read_data_into_3d("data/digitdata/trainingimages")
+    training_labels = assign_labels("data/digitdata/traininglabels")
 
-in_vector = map_features(training_matrix[0])
-hidden_layer = np.empty(51)  # Arbitrary number of neurons in the hidden layer = 50 + 1 (bias)
-output_nodes_count = 10  # 10 digit classifications
+    in_vector = map_features(training_matrix[0])
+    hidden_layer = np.empty(51)  # Arbitrary number of neurons in the hidden layer = 50 + 1 (bias)
+    output_nodes_count = 10  # 10 digit classifications
 
-weights1 = init_weights(len(hidden_layer), len(in_vector))  # For weights mapping from input layer to hidden layer
-weights2 = init_weights(output_nodes_count, len(hidden_layer))  # For weights mapping from hidden layer to output layer
+    weights1 = init_weights(len(hidden_layer), len(in_vector))  # For weights mapping from input layer to hidden layer
+    weights2 = init_weights(output_nodes_count,
+                            len(hidden_layer))  # For weights mapping from hidden layer to output layer
 
-# Epoch looping
-start_time = time.time()
-iteration = 0
+    # Epoch looping
+    start_time = time.time()
+    iteration = 0
 
-try:
-    while True:
-        gradient1 = np.zeros(len(in_vector))
-        gradient2 = np.zeros(len(hidden_layer))
+    try:
+        while True:
+            gradient1 = np.zeros(len(in_vector))
+            gradient2 = np.zeros(len(hidden_layer))
 
-        print('gradient1 is', gradient1.shape)
-        print('gradient2 is', gradient2.shape)
+            # print('gradient1 is', gradient1.shape)
+            # print('gradient2 is', gradient2.shape)
 
-        i = 0  # For quickly referencing between each image and its label
-        for image in training_matrix:
+            i = 0  # For quickly referencing between each image and its label
+            for image in training_matrix:
+                # Forward Propagation
+                a1 = map_features(image)
+                a2, a3 = forward_propagation(a1, weights1, weights2)
+                # print(f'training_labels[i] is {training_labels[i]}')
+                # print('a1 is', a1.shape)
+                # print('a2 is', a2.shape)
+                # print('a3 is', a3.shape)
 
-            # Forward Propagation
-            a1 = map_features(image)
-            a2, a3 = forward_propagation(a1, weights1, weights2)
-            print('a1 is', a1.shape)
-            print('a2 is', a2.shape)
-            print('a3 is', a3.shape)
+                # Backward Propagation, error computing
+                error3 = a3 - training_labels[i]
+                error2 = np.dot(weights2.T, error3) * (a2 * (1 - a2))
+                # print('error3 is', error3.shape)
+                # print('error2 is', error2.shape)
 
-            # Backward Propagation, error computing
-            error3 = a3 - training_labels[i]
-            error2 = np.dot(weights2.T, error3) * (a2 * (1 - a2))
-            print('error3 is', error3.shape)
-            print('error2 is', error2.shape)
+                # Gradient computation
+                gradient2 = gradient2 + np.dot(error3.reshape(10, 1), a2.reshape(1, 51))
+                gradient1 = gradient1 + np.dot(error2.reshape(51, 1), a1.reshape(1, 785))
+                # print('gradient2 is', gradient2.shape)
+                # print('gradient1 is', gradient1.shape)
 
-            # Gradient computation
-            gradient2 = gradient2 + np.dot(error3.reshape(10,1), a2.reshape(1, 51))
-            gradient1 = gradient1 + np.dot(error2.reshape(51, 1), a1.reshape(1, 785))
+                # print(a3)
+                # print(training_labels[i])
+                # exit(0)
+                i += 1
 
-        # TODO
+            # Compute average regularized gradient
+            # Using lambda = 0 for now (lambda is usually meant to prevent over-fitting)
+            D_1 = gradient1 / (len(in_vector) - 1)
+            D_2 = gradient2 / (len(in_vector) - 1)
 
-        i += 1
+            # print('D_1 is', D_1.shape)
+            # print('D_2 is', D_2.shape)
+            # print('weights1 is', weights1.shape)
+            # print('weights2 is', weights2.shape)
 
-        if (time.time() - start_time) > 5 * 60:  # 5 minutes = 5 * 60 seconds
-            print("Loop terminated: Exceeded 5 minutes.")
-            break
+            # Update weights via gradient step
+            learning_rate = 0.1  # Arbitrary, lower = less over-fitting but slower
+            weights1 = weights1 - (learning_rate * D_1)
+            weights2 = weights2 - (learning_rate * D_2)
 
-        # TODO REMOVE THIS ASAP
-        break
+            print(f'Finished epoch {iteration} at time {round(time.time() - start_time, 3)} seconds')
+            iteration += 1
 
-except KeyboardInterrupt:
-    print('Time spent:', round(time.time() - start_time, 3), 'seconds')
-    # TODO save weights
+            if (time.time() - start_time) > 1800:
+                print("Loop terminated: Exceeded 30 minutes.")
+                np.save('nndigitsweights1', weights1)
+                np.save('nndigitsweights2', weights2)
+                print('Weights have been saved.')
+                break
+
+    except KeyboardInterrupt:
+        print('Time spent:', round(time.time() - start_time, 3), 'seconds')
+        np.save('nndigitsweights1', weights1)
+        np.save('nndigitsweights2', weights2)
+        print('Weights have been saved.')
+
+
+def main():
+    train()
