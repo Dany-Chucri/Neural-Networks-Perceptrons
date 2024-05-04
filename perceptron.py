@@ -107,6 +107,26 @@ def calculate_accuracy(features, labels, weights):
     accuracy = (predicted_labels == labels).mean() * 100
     return accuracy
 
+'''
+def calculate_accuracy(features, labels, weights):
+    correct_count = 0
+    total_count = len(labels)
+    prediction = 0
+
+    for i in range(total_count):
+
+        # find prediction, zip just pairs values together
+        for feature, weight in zip(features[i], weights):
+            prediction += feature * weight
+        # make it 1 or -1
+        prediction_label = -1 if prediction < 0 else 1
+        # compare prediction and label
+        if prediction_label == labels[i]:
+            correct_count += 1
+
+    accuracy = (correct_count / total_count) * 100
+    return accuracy'''
+
 
 
 
