@@ -60,14 +60,13 @@ def assign_labels(file_path):
 
 
 # Flattens an n*m image into a vector, mapping the features as the vector elements.
-# The raw pixels are used directly as the features, resulting in an (n*m)+1 vector.
-# Starts at index 1, since index 0 is reserved for the bias.
+# The raw pixels are used directly as the features
 def map_features(image_matrix):
     flattened_vector = [1]
     for row in image_matrix:
         for char in row:
             if char == ' ':  # Empty character
-                flattened_vector.append(0.1)
+                flattened_vector.append(0)
             else:  # Non-empty character
                 flattened_vector.append(10)
     return np.array(flattened_vector)
@@ -79,8 +78,9 @@ def init_weights(dimx, dimy):
     for iy, ix in np.ndindex(weights.shape):
         weight = 0
         while weight == 0:
-            weight = np.random.uniform(-1, 1)
+            weight = np.random.random()
         weights[iy, ix] = weight
+    weights[0, 0] = 1
     return weights
 
 
@@ -91,13 +91,12 @@ def sigmoid(x):
 
 # Softmax activation function
 def softmax(x):
-    exp_x = np.exp(x - np.max(x))
-    return exp_x / exp_x.sum()
+    return np.exp(x) / sum(np.exp(x))
 
 
 def forward_propagation(layer1, weights_1_2, weights_2_out):
     z2 = np.dot(weights_1_2, layer1)
-    a2 = softmax(z2)
+    a2 = sigmoid(z2)
     z3 = np.dot(weights_2_out, a2)
     a3 = softmax(z3)
     # testing prints
@@ -139,90 +138,89 @@ def validate(training_matrix, training_labels, weights_1, weights_2):
     print(total_guesses)
 
 
+def compute_avg_reg_gradient(lmbd, weights1, weights2, gradient1, gradient2, n):
+    d1 = (gradient1 / n) + (lmbd * weights1)
+    d1[0] = (gradient1 / n)[0]
+    d2 = (gradient2 / n) + (lmbd * weights2)
+    d1[0] = (gradient2 / n)[0]
+    return d1, d2
+
+
 def train():
     # Initialization
     training_matrix = read_data_into_3d("data/digitdata/trainingimages")
     training_labels = assign_labels("data/digitdata/traininglabels")
 
     in_vector = map_features(training_matrix[0])
-    hidden_layer = np.empty(51)  # Arbitrary number of neurons in the hidden layer = 50 + 1 (bias)
+    hidden_layer = np.empty(10)  # Arbitrary number of neurons in the hidden layer = 50 + 1 (bias)
     output_nodes_count = 10  # 10 digit classifications
+    # bias1 = np.ones(10)
+    # bias2 = np.ones(10)
 
-    weights1 = init_weights(len(hidden_layer), len(in_vector))  # For weights mapping from input layer to hidden layer
-    weights2 = init_weights(output_nodes_count,
-                            len(hidden_layer))  # For weights mapping from hidden layer to output layer
+    weights1 = init_weights(len(hidden_layer), len(in_vector) + 1)  # For weights mapping from input layer to hidden layer
+    weights2 = init_weights(output_nodes_count, len(hidden_layer) + 1)  # For weights mapping from hidden layer to output
+    # weights1 = np.load('nndigitsweights1.npy')
+    # weights2 = np.load('nndigitsweights2.npy')
 
     # Epoch looping
     start_time = time.time()
-    iteration = 0
+    iteration = 0  # Epoch count
+    percent_data = 1.0 * len(training_matrix)  # Percentage of training data to bbe use
 
     try:
         while True:
             gradient1 = np.zeros(len(in_vector))
             gradient2 = np.zeros(len(hidden_layer))
 
-            # print('gradient1 is', gradient1.shape)
-            # print('gradient2 is', gradient2.shape)
-
             i = 0  # For quickly referencing between each image and its label
             for image in training_matrix:
                 # Forward Propagation
                 a1 = map_features(image)
                 a2, a3 = forward_propagation(a1, weights1, weights2)
-                # print(f'training_labels[i] is {training_labels[i]}')
-                # print('a1 is', a1.shape)
-                # print('a2 is', a2.shape)
-                # print('a3 is', a3.shape)
-
                 # Backward Propagation, error computing
                 error3 = a3 - training_labels[i]
                 error2 = np.dot(weights2.T, error3) * (a2 * (1 - a2))
-                # print('error3 is', error3.shape)
-                # print('error2 is', error2.shape)
 
                 # Gradient computation
-                gradient2 = gradient2 + np.dot(error3.reshape(10, 1), a2.reshape(1, 51))
-                gradient1 = gradient1 + np.dot(error2.reshape(51, 1), a1.reshape(1, 785))
-                # print('gradient2 is', gradient2.shape)
-                # print('gradient1 is', gradient1.shape)
+                gradient2 = gradient2 + np.dot(error3.reshape(10, 1), a2.reshape(1, 10))
+                gradient1 = gradient1 + np.dot(error2.reshape(10, 1), a1.reshape(1, 784))
 
-                # print(a3)
-                # print(training_labels[i])
-                # exit(0)
                 i += 1
+                if i >= percent_data:  # Already trained on enough of the data
+                    break
 
             # Compute average regularized gradient
             # Using lambda = 0 for now (lambda is usually meant to prevent over-fitting)
-            D_1 = gradient1 / (len(in_vector) - 1)
-            D_2 = gradient2 / (len(in_vector) - 1)
-
-            # print('D_1 is', D_1.shape)
-            # print('D_2 is', D_2.shape)
-            # print('weights1 is', weights1.shape)
-            # print('weights2 is', weights2.shape)
+            lmbd = 0.1
+            # b1, b2, d1, d2 = compute_avg_reg_gradient(lmbd, weights1, weights2, gradient1, gradient2, bias1, bias2, len(training_matrix))
+            d1, d2 = compute_avg_reg_gradient(lmbd, weights1, weights2, gradient1, gradient2, len(training_matrix))
 
             # Update weights via gradient step
-            learning_rate = 0.05  # Arbitrary, lower = less over-fitting but slower
-            weights1 = weights1 - (learning_rate * D_1)
-            weights2 = weights2 - (learning_rate * D_2)
+            learning_rate = 0.1  # Arbitrary, lower = less over-fitting but slower
+            weights1 = weights1 - (learning_rate * d1)
+            weights2 = weights2 - (learning_rate * d2)
+            # bias1 = bias1 - (learning_rate * b1)
+            # bias2 = bias2 - (learning_rate * b2)
 
+            # validate(training_matrix, training_labels, weights1, weights2, bias1, bias2)
             validate(training_matrix, training_labels, weights1, weights2)
 
             print(f'Finished epoch {iteration} at time {round(time.time() - start_time, 3)} seconds')
             iteration += 1
 
-            if (time.time() - start_time) > 1800:
-                print("Loop terminated: Exceeded 30 minutes.")
+            time_elapsed = time.time() - start_time
+            if time_elapsed > 300:
+                print(f"Loop terminated: Exceeded {time_elapsed/60} minute(s).")
                 np.save('nndigitsweights1', weights1)
                 np.save('nndigitsweights2', weights2)
-                print('Weights have been saved.')
+                print(f'Weights have been saved based on {percent_data/50}% of the data.')
                 break
 
     except KeyboardInterrupt:
         print('Time spent:', round(time.time() - start_time, 3), 'seconds')
         np.save('nndigitsweights1', weights1)
         np.save('nndigitsweights2', weights2)
-        print('Weights have been saved.')
+        print(f'Weights have been saved based on {percent_data/50}% of the data.')
 
 
 def main():

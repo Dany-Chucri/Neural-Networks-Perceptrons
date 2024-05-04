@@ -39,6 +39,7 @@ def read_data_into_3d(file_path):
         raise ValueError(f"Incomplete final matrix starting at line {line_number - len(current_matrix) + 1}")
     return np.array(matrix_list, dtype='<U1')
 
+
 # Assigns respective labels for each image in a dictionary using one-hot-encoding,
 # i.e., label = 9 is represented by the vector [0, 0, 0, 0, 0, 0, 0, 0, 0, 1].
 # Each key of the dictionary corresponds to its respective matrix image in the overall 3D array of images.
@@ -106,8 +107,6 @@ def calculate_accuracy(features, labels, weights):
     predicted_labels = np.sign(predictions)
     accuracy = (predicted_labels == labels).mean() * 100
     return accuracy
-
-
 
 
 training_matrix = read_data_into_3d("data/digitdata/trainingimages")
