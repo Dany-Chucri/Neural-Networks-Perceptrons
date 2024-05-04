@@ -1,9 +1,10 @@
 import nndigits as nn
 import numpy as np
 
+
 # Initialization
-training_matrix = nn.read_data_into_3d("data/digitdata/testimages")
-training_labels = nn.assign_labels("data/digitdata/testlabels")
+training_matrix = nn.read_data_into_3d("data/digitdata/trainingimages")
+training_labels = nn.assign_labels("data/digitdata/traininglabels")
 
 in_vector = nn.map_features(training_matrix[0])
 hidden_layer = np.empty(51)  # Arbitrary number of neurons in the hidden layer = 50 + 1 (bias)
@@ -25,6 +26,6 @@ for image in training_matrix:
     total_guesses += 1
     i += 1
 
-print(f'{round(correct_guesses/total_guesses, 2) * 100}%')
+print(f'{round(correct_guesses/total_guesses, 4) * 100}%')
 print(correct_guesses)
 print(total_guesses)

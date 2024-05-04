@@ -120,6 +120,25 @@ def forward_propagation(layer1, weights_1_2, weights_2_out):
     return a2, a3
 
 
+def validate(training_matrix, training_labels, weights_1, weights_2):
+    correct_guesses = 0
+    total_guesses = 0
+    i = 0
+
+    for image in training_matrix:
+        a1 = map_features(image)
+        a2, a3 = forward_propagation(a1, weights_1, weights_2)
+
+        if a3.argmax() == training_labels[i].argmax():
+            correct_guesses += 1
+        total_guesses += 1
+        i += 1
+
+    print(f'{round(correct_guesses / total_guesses, 4) * 100}%')
+    print(correct_guesses)
+    print(total_guesses)
+
+
 def train():
     # Initialization
     training_matrix = read_data_into_3d("data/digitdata/trainingimages")
@@ -183,9 +202,11 @@ def train():
             # print('weights2 is', weights2.shape)
 
             # Update weights via gradient step
-            learning_rate = 0.1  # Arbitrary, lower = less over-fitting but slower
+            learning_rate = 0.05  # Arbitrary, lower = less over-fitting but slower
             weights1 = weights1 - (learning_rate * D_1)
             weights2 = weights2 - (learning_rate * D_2)
+
+            validate(training_matrix, training_labels, weights1, weights2)
 
             print(f'Finished epoch {iteration} at time {round(time.time() - start_time, 3)} seconds')
             iteration += 1
