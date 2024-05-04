@@ -8,6 +8,9 @@ np.set_printoptions(linewidth=np.inf)
 # Reads in the digit images from a given file such as 'trainingimages', and creates a 3D matrix where each 28x28
 # 2D matrix is one of the 28x28 images representing a digit
 def read_data_into_3d(file_path):
+
+    
+
     matrix_list = []
     current_matrix = []
     line_number = 0
@@ -42,7 +45,12 @@ def read_data_into_3d(file_path):
 # Assigns respective labels for each image in a dictionary using one-hot-encoding,
 # i.e., label = 9 is represented by the vector [0, 0, 0, 0, 0, 0, 0, 0, 0, 1].
 # Each key of the dictionary corresponds to its respective matrix image in the overall 3D array of images.
-def assign_labels(file_path):
+def assign_labels(file_path, type):
+
+    n = 5000
+    if(type == 3):
+        n=1000
+
     labels_dict = {}
     with open(file_path, 'r') as file:
         for index, line in enumerate(file):
@@ -55,7 +63,7 @@ def assign_labels(file_path):
                 labels_dict[index] = label_vector
             else:
                 raise ValueError("Non-integer value found in labels file")
-    if len(labels_dict) != 5000:
+    if len(labels_dict) != n:
         raise ValueError("The number of labels does not match the expected count of 5000")
     return labels_dict
 
@@ -100,13 +108,6 @@ def perceptron(features, labels, alpha=1.0, max_iterations=1000):
     
     return theta
 
-
-def calculate_accuracy(features, labels, weights):
-    predictions = np.dot(features, weights)
-    predicted_labels = np.sign(predictions)
-    accuracy = (predicted_labels == labels).mean() * 100
-    return accuracy
-
 '''
 def calculate_accuracy(features, labels, weights):
     correct_count = 0
@@ -125,26 +126,30 @@ def calculate_accuracy(features, labels, weights):
             correct_count += 1
 
     accuracy = (correct_count / total_count) * 100
-    return accuracy'''
+    return accuracy
+'''
 
+def calculate_accuracy(features, labels, weights):
+    predictions = np.dot(features, weights)
+    predicted_labels = np.sign(predictions)
+    accuracy = (predicted_labels == labels).mean() * 100
+    return accuracy
 
+def convert_to_binary_labels(labels_dict):
+    binary_labels = []
+    for label in labels_dict.values():
+        # find index of the max value
+        index = np.argmax(label)
+        # Check if index is 0, assign -1, if not then assign 1
+        binary_label = -1 if index == 0 else 1
+        binary_labels.append(binary_label)
+    return binary_labels
 
 
 training_matrix = read_data_into_3d("data/digitdata/trainingimages")
-training_labels_dict = assign_labels("data/digitdata/traininglabels")
+training_labels_dict = assign_labels("data/digitdata/traininglabels", 0)
 
-binary_labels = []
-for label in training_labels_dict.values():
-    # find index of the max value
-    index = np.argmax(label)
-    
-    # Check if index is 0, assign -1, if not then assign 1
-    if index == 0:
-        binary_label = -1
-    else:
-        binary_label = 1
-    
-    binary_labels.append(binary_label)
+binary_labels = convert_to_binary_labels(training_labels_dict)
 
 features = np.array([map_features(image) for image in training_matrix])
 labels = np.array(binary_labels)
@@ -152,7 +157,17 @@ labels = np.array(binary_labels)
 # Perceptron training
 weights = perceptron(features, labels, alpha=0.1, max_iterations=1000)
 
-accuracy = calculate_accuracy(features, labels, weights)
+
+validation_matrix = read_data_into_3d("data/digitdata/validationimages")
+validation_labels_dict = assign_labels("data/digitdata/validationlabels", 3)
+
+val_binary_labels = convert_to_binary_labels(validation_labels_dict)
+
+val_features = np.array([map_features(image) for image in validation_matrix])
+val_labels = np.array(val_binary_labels)
+
+
+accuracy = calculate_accuracy(val_features, val_labels, weights)
 print(f"Accuracy: {accuracy:.2f}%")
 
 np.savetxt("perceptron_weights.txt", weights, fmt='%f')
