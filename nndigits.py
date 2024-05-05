@@ -95,9 +95,14 @@ def softmax(x):
     return exp_x / exp_x.sum()
 
 
+# ReLU activation function
+def ReLU(x):
+    return np.maximum(x, 0)
+
+
 def forward_propagation(layer1, weights_1_2, weights_2_out):
     z2 = np.dot(weights_1_2, layer1)
-    a2 = softmax(z2)
+    a2 = sigmoid(z2)
     z3 = np.dot(weights_2_out, a2)
     a3 = softmax(z3)
     # testing prints
@@ -202,16 +207,17 @@ def train():
             # print('weights2 is', weights2.shape)
 
             # Update weights via gradient step
-            learning_rate = 0.05  # Arbitrary, lower = less over-fitting but slower
+            learning_rate = 1  # Arbitrary, lower = less over-fitting but slower
             weights1 = weights1 - (learning_rate * D_1)
             weights2 = weights2 - (learning_rate * D_2)
 
-            validate(training_matrix, training_labels, weights1, weights2)
+            if iteration % 10 == 0:
+                validate(training_matrix, training_labels, weights1, weights2)
 
             print(f'Finished epoch {iteration} at time {round(time.time() - start_time, 3)} seconds')
             iteration += 1
 
-            if (time.time() - start_time) > 1800:
+            if (time.time() - start_time) > 3600:
                 print("Loop terminated: Exceeded 30 minutes.")
                 np.save('nndigitsweights1', weights1)
                 np.save('nndigitsweights2', weights2)
