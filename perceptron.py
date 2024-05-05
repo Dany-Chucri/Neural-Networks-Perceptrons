@@ -216,21 +216,6 @@ if(user_input == "0"):
         print("Invalid Input")
 
 
-    validation_matrix = read_data_into_3d("data/digitdata/validationimages", user_input)
-    validation_labels_dict = assign_labels("data/digitdata/validationlabels", 3)
-
-    val_binary_labels = convert_to_binary_labels(validation_labels_dict)
-
-    val_features = np.array([map_features(image) for image in validation_matrix])
-    val_labels = np.array(val_binary_labels)
-
-
-    accuracy = calculate_accuracy(val_features, val_labels, weights)
-    print(f"\nPerceptron Digit Classification Accuracy: {accuracy:.2f}%\n")
-
-    np.savetxt("perceptron_digits_weights.txt", weights, fmt='%f')
-    print("Weights Succesfully Saved")
-
 elif(user_input == "1"):
 
     training_matrix = read_data_into_3d("data/facedata/facedatatrain", user_input)
@@ -287,7 +272,6 @@ elif(user_input == "1"):
         
 else:
     print("Invalid Input")
-
 
 
 
