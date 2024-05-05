@@ -143,10 +143,27 @@ def calculate_accuracy(features, labels, weights):
 '''
 
 def calculate_accuracy(features, labels, weights):
-    predictions = np.dot(features, weights)
-    predicted_labels = np.sign(predictions)
-    accuracy = (predicted_labels == labels).mean() * 100
+    total_count = len(labels)
+    correct_count = 0
+
+    for i in range(total_count):
+        prediction = 0
+        
+        #get predictions
+        for j in range(len(features[i])):
+            prediction += features[i][j] * weights[j]
+
+        # make it binary
+        predicted_label = -1 if prediction < 0 else 1
+
+        # increment if correct
+        if predicted_label == labels[i]:
+            correct_count += 1
+
+    # get % hit rate
+    accuracy = (correct_count / total_count) * 100
     return accuracy
+
 
 def convert_to_binary_labels(labels_dict):
     binary_labels = []
