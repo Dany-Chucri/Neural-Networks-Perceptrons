@@ -62,6 +62,8 @@ def assign_labels(file_path, type):
         n=301
     elif(type == 3):
         n=1000
+    elif(type==4):
+        n=150
 
     labels_dict = {}
     with open(file_path, 'r') as file:
@@ -77,6 +79,7 @@ def assign_labels(file_path, type):
                 raise ValueError("Non-integer value found in labels file")
     if len(labels_dict) != n:
         print(len(labels_dict))
+        print(n)
         raise ValueError("The number of labels does not match the expected count of 5000")
     return labels_dict
 
@@ -266,7 +269,7 @@ elif(user_input == "1"):
 
     elif(testingInput == "2"):
         test_matrix = read_data_into_3d("data/facedata/facedatatest", user_input)
-        test_labels_dict = assign_labels("data/facedata/facedatatestlabels", 2)
+        test_labels_dict = assign_labels("data/facedata/facedatatestlabels", 4)
 
         test_binary_labels = convert_to_binary_labels(test_labels_dict)
 
@@ -284,5 +287,7 @@ elif(user_input == "1"):
         
 else:
     print("Invalid Input")
+
+
 
 
