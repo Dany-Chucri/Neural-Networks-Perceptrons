@@ -3,8 +3,8 @@ import numpy as np
 
 
 # Initialization
-training_matrix = nn.read_data_into_3d("data/facedata/facedatavalidation")
-training_labels = nn.assign_labels("data/facedata/facedatavalidationlabels")
+training_matrix = nn.read_data_into_3d("data/facedata/facedatatest")
+training_labels = nn.assign_labels("data/facedata/facedatatestlabels")
 
 in_vector = nn.map_features(training_matrix[0])
 hidden_layer = np.empty(51)  # Arbitrary number of neurons in the hidden layer = 50 + 1 (bias)

@@ -146,7 +146,7 @@ def validate(training_matrix, training_labels, weights_1, weights_2):
 
 def train():
     # Initialization
-    training_matrix = read_data_into_3d("data/facedata/facedatatest")
+    training_matrix = read_data_into_3d("data/facedata/facedatatrain")
     training_labels = assign_labels("data/facedata/facedatatrainlabels")
 
     in_vector = map_features(training_matrix[0])
@@ -198,8 +198,9 @@ def train():
 
             # Compute average regularized gradient
             # Using lambda = 0 for now (lambda is usually meant to prevent over-fitting)
-            D_1 = gradient1 / (len(in_vector) - 1)
-            D_2 = gradient2 / (len(in_vector) - 1)
+            lmbd = 0.01
+            D_1 = (gradient1 / (len(in_vector) - 1)) + (lmbd * weights1)
+            D_2 = (gradient2 / (len(in_vector) - 1)) + (lmbd * weights2)
 
             # print('D_1 is', D_1.shape)
             # print('D_2 is', D_2.shape)
@@ -217,8 +218,9 @@ def train():
             print(f'Finished epoch {iteration} at time {round(time.time() - start_time, 3)} seconds')
             iteration += 1
 
-            if (time.time() - start_time) > 3600:
-                print("Loop terminated: Exceeded 30 minutes.")
+            elapsed_time = time.time() - start_time
+            if elapsed_time > 600:
+                print(f"Loop terminated: Exceeded {round(elapsed_time/60, 3)} minute(s).")
                 np.save('nnfacesweights1', weights1)
                 np.save('nnfacesweights2', weights2)
                 print('Weights have been saved.')
